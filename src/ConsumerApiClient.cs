@@ -10,7 +10,7 @@ namespace Consumer
     {
         public int Id;
         public string Status;
-        public string Name;
+        public string WalkName;
     }
 
     public class WalkClient
