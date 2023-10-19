@@ -1,65 +1,58 @@
 # Example Consumer
 
-![Build](https://github.com/pactflow/example-consumer/workflows/Build/badge.svg)
+[![Build](https://github.com/pactflow/example-consumer-dotnet/actions/workflows/build.yml/badge.svg)](https://github.com/pactflow/example-consumer-dotnet/actions/workflows/build.yml)
 
-[![Pact Status](https://test.pactflow.io/pacts/provider/pactflow-example-provider/consumer/pactflow-example-consumer/latest/badge.svg?label=provider)](https://test.pactflow.io/pacts/provider/pactflow-example-provider/consumer/pactflow-example-consumer/latest) (latest pact)
+[![Pact Status](https://testdemo.pactflow.io/pacts/provider/pactflow-example-provider-dotnet/consumer/pactflow-example-consumer-dotnet/latest/badge.svg?label=provider)](https://testdemo.pactflow.io/pacts/provider/pactflow-example-provider-dotnet/consumer/pactflow-example-consumer-dotnet/latest) (latest pact)
 
-[![Can I deploy Status](https://test.pactflow.io/pacticipants/pactflow-example-consumer/branches/master/latest-version/can-i-deploy/to-environment/production/badge)](https://test.pactflow.io/pacticipants/pactflow-example-consumer/branches/master/latest-version/can-i-deploy/to-environment/production/badge)
+[![Pact Status](https://testdemo.pactflow.io/matrix/provider/pactflow-example-provider-dotnet/latest/prod/consumer/pactflow-example-consumer-dotnet/latest/prod/badge.svg?label=provider)](https://testdemo.pactflow.io/pacts/provider/pactflow-example-provider-dotnet/consumer/pactflow-example-consumer-dotnet/latest/prod) (prod/prod pact)
 
-This is an example of a Node consumer using Pact to create a consumer driven contract, and sharing it via [PactFlow](https://pactflow.io).
+This is an example of a dotnet core consumer using Pact to create a consumer driven contract, and sharing it via [PactFlow](https://pactflow.io).
 
-It is using a public tenant on PactFlow, which you can access [here](https://test.pactflow.io/) using the credentials `dXfltyFMgNOFZAxr8io9wJ37iUpY42M`/`O5AIZWxelWbLvqMd8PkAVycBJh2Psyg1`. The latest version of the Example Consumer/Example Provider pact is published [here](https://test.pactflow.io/pacts/provider/pactflow-example-provider/consumer/pactflow-example-consumer/latest).
+It is using a private tenant on PactFlow. The latest version of the Example Consumer/Example Provider pact is published [here](https://testdemo.pactflow.io/pacts/provider/pactflow-example-provider-dotnet/consumer/pactflow-example-consumer-dotnet/latest).
 
 The project uses a Makefile to simulate a very simple build pipeline with two stages - test and deploy.
 
 * Test
   * Run tests (including the pact tests that generate the contract)
-  * Publish pacts, associating the consumer version with the name of the current branch
+  * Publish pacts, tagging the consumer version with the name of the current branch
   * Check if we are safe to deploy to prod (ie. has the pact content been successfully verified)
 * Deploy (only from master)
   * Deploy app (just pretend for the purposes of this example!)
-  * Record the deployment in the Pact Broker
+  * Tag the deployed consumer version as 'prod'
+
+## Dependencies
+
+* Docker
+* A [PactFlow](https://pactflow.io) account 
+* A [read/write API Token](https://docs.pactflow.io/#configuring-your-api-token) from your PactFlow account
+* .NET 6.x installed. You can install it from here: https://docs.microsoft.com/en-us/dotnet/core/install/macos
 
 ## Usage
 
 See the [PactFlow CI/CD Workshop](https://github.com/pactflow/ci-cd-workshop).
 
-## Running the application
+The below commands are designed for a Linux/OSX environment, please translate for use on Windows/PowerShell as necessary:
 
-Start up the [provider](https://github.com/pactflow/example-provider/) (or another [compatible](https://docs.pactflow.io/docs/examples) provider) API by running `npm run start`.
+Please ensure the following environment variables have been exported in the process that you run the tests (generally a terminal):
 
-Open a separate terminal for the consumer.
-
-Before starting the consumer, create a `.env` file in the root of the project and set the URL to point to your running provider:
-
-```bash
-REACT_APP_API_BASE_URL=http://localhost:8080
+```
+export PACT_BROKER_TOKEN=<your pactflow read/write token here>
+export PACT_BROKER_BASE_URL=https://<your pactflow subdomain>.pactflow.io
 ```
 
-Then run:
+### Run tests
 
-```bash
-npm run start
+```
+make restore
+make test
 ```
 
-### Pre-requisites
+### Simulating CI
 
-**Software**:
+Usually, you would integrate this into a real CI system (such as Buildkite/Jenkins/CircleCI etc., or Travis as this repository is built against).
 
-* Tools listed at: https://docs.pactflow.io/docs/workshops/ci-cd/set-up-ci/prerequisites/
-* A pactflow.io account with an valid [API token](https://docs.pactflow.io/#configuring-your-api-token)
+You can simulate a CI process with the following command:
 
-
-#### Environment variables
-
-To be able to run some of the commands locally, you will need to export the following environment variables into your shell:
-
-* `PACT_BROKER_TOKEN`: a valid [API token](https://docs.pactflow.io/#configuring-your-api-token) for PactFlow
-* `PACT_BROKER_BASE_URL`: a fully qualified domain name with protocol to your pact broker e.g. https://testdemo.pactflow.io
-
-### Usage
-
-#### Pact use case
-
-* `make test` - run the pact test locally
-* `make fake_ci` - run the CI process locally
+```
+make fake_ci
+```

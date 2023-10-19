@@ -1,0 +1,58 @@
+{
+  "consumer": {
+    "name": "pactflow-example-consumer"
+  },
+  "interactions": [
+    {
+      "description": "A request to get walks",
+      "providerStates": [
+        {
+          "name": "walks exist"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/walks"
+      },
+      "response": {
+        "body": [
+          {
+            "Id": 27,
+            "Name": "Walk-27",
+            "Status": "Pending"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json; charset=utf-8"
+        },
+        "matchingRules": {
+          "body": {
+            "$": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type",
+                  "min": 1
+                }
+              ]
+            }
+          },
+          "header": {}
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pactRust": {
+      "ffi": "0.4.0",
+      "models": "1.0.4"
+    },
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  },
+  "provider": {
+    "name": "pactflow-example-provider"
+  }
+}

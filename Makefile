@@ -1,30 +1,14 @@
-# Why are we using a Makefile? PactFlow has around 30 example consumer and provider projects that show how to use Pact. 
-# We often use them for demos and workshops, and Makefiles allow us to provide a consistent language and platform agnostic interface
-# for each project. You do not need to use Makefiles to use Pact in your own project!
-
 # Default to the read only token - the read/write token will be present on Travis CI.
 # It's set as a secure environment variable in the .travis.yml file
-GITHUB_ORG="pactflow"
-PACTICIPANT="pactflow-example-consumer"
-GITHUB_WEBHOOK_UUID := "04510dc1-7f0a-4ed2-997d-114bfa86f8ad"
-PACT_CLI="docker run --rm -v ${PWD}:${PWD} -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN pactfoundation/pact-cli"
+PACTICIPANT := "pactflow-example-consumer-dotnet"
+GITHUB_WEBHOOK_UUID := "e0d3dd92-d69a-40f7-a58b-7d5f0c739028"
+PACT_CLI="docker run --rm -v ${PWD}:${PWD} -e PACT_BROKER_BASE_URL -e PACT_BROKER_TOKEN pactfoundation/pact-cli:latest"
 
-.EXPORT_ALL_VARIABLES:
-GIT_COMMIT?=$(shell git rev-parse HEAD)
-GIT_BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
-ENVIRONMENT?=production
-
-# Only deploy from master (to production env) or test (to test env)
+# Only deploy from master
 ifeq ($(GIT_BRANCH),master)
-	ENVIRONMENT=production
 	DEPLOY_TARGET=deploy
 else
-	ifeq ($(GIT_BRANCH),test)
-		ENVIRONMENT=test
-		DEPLOY_TARGET=deploy
-	else
-		DEPLOY_TARGET=no_deploy
-	endif
+	DEPLOY_TARGET=no_deploy
 endif
 
 all: test
@@ -33,55 +17,60 @@ all: test
 ## CI tasks
 ## ====================
 
-ci: test publish_pacts can_i_deploy $(DEPLOY_TARGET)
+clean: pacts/*.json
+	rm pacts/*.json
+
+restore:
+	dotnet restore src
+	dotnet restore tests
+
+run:
+	cd src && dotnet run
+
+ci: clean restore test publish_pacts can_i_deploy $(DEPLOY_TARGET)
 
 # Run the ci target from a developer machine with the environment variables
-# set as if it was on CI.
+# set as if it was on Travis CI.
 # Use this for quick feedback when playing around with your workflows.
-fake_ci: .env
-	@CI=true \
-	REACT_APP_API_BASE_URL=http://localhost:8080 \
+fake_ci:
+	CI=true \
+	GIT_COMMIT=`git rev-parse --short HEAD`+`date +%s` \
+	GIT_BRANCH=`git rev-parse --abbrev-ref HEAD` \
 	make ci
 
-publish_pacts: .env
-	@echo "\n========== STAGE: publish pacts ==========\n"
+publish_pacts:
 	@"${PACT_CLI}" publish ${PWD}/pacts --consumer-app-version ${GIT_COMMIT} --branch ${GIT_BRANCH}
 
 ## =====================
 ## Build/test tasks
 ## =====================
 
-test: .env
-	@echo "\n========== STAGE: test (pact) ==========\n"
-	npm run test:pact
+test:
+	dotnet test tests
+
 
 ## =====================
 ## Deploy tasks
 ## =====================
-
-create_environment:
-	@"${PACT_CLI}" broker create-environment --name production --production
 
 deploy: deploy_app record_deployment
 
 no_deploy:
 	@echo "Not deploying as not on master branch"
 
-can_i_deploy: .env
-	@echo "\n========== STAGE: can-i-deploy? ==========\n"
+can_i_deploy:
 	@"${PACT_CLI}" broker can-i-deploy \
 	  --pacticipant ${PACTICIPANT} \
 	  --version ${GIT_COMMIT} \
-	  --to-environment ${ENVIRONMENT} \
-	  --retry-while-unknown 30 \
+	  --to-environment production \
+	  --retry-while-unknown 0 \
 	  --retry-interval 10
 
 deploy_app:
-	@echo "\n========== STAGE: deploy ==========\n"
-	@echo "Deploying to ${ENVIRONMENT}"
+	@echo "Deploying to prod"
 
 record_deployment: .env
-	@"${PACT_CLI}" broker record-deployment --pacticipant ${PACTICIPANT} --version ${GIT_COMMIT} --environment ${ENVIRONMENT}
+	@"${PACT_CLI}" broker record-deployment --pacticipant ${PACTICIPANT} --version ${GIT_COMMIT} --environment production
 
 ## =====================
 ## PactFlow set up tasks
@@ -99,7 +88,7 @@ create_github_token_secret:
 # This webhook will update the Github commit status for this commit
 # so that any PRs will get a status that shows what the status of
 # the pact is.
-create_or_update_github_commit_status_webhook:
+create_or_update_github_webhook:
 	@"${PACT_CLI}" \
 	  broker create-or-update-webhook \
 	  'https://api.github.com/repos/pactflow/example-consumer/statuses/$${pactbroker.consumerVersionNumber}' \
@@ -115,17 +104,20 @@ create_or_update_github_commit_status_webhook:
 test_github_webhook:
 	@curl -v -X POST ${PACT_BROKER_BASE_URL}/webhooks/${GITHUB_WEBHOOK_UUID}/execute -H "Authorization: Bearer ${PACT_BROKER_TOKEN}"
 
+## ======================
+## Travis CI set up tasks
+## ======================
+
+GIT_login:
+	@docker run --rm -v ${HOME}/.travis:/root/.travis -it lirantal/travis-cli login --pro
+
+# Requires PACT_BROKER_TOKEN to be set
+GIT_encrypt_pact_broker_token:
+	@docker run --rm -v ${HOME}/.travis:/root/.travis -v ${PWD}:${PWD} --workdir ${PWD} lirantal/travis-cli encrypt --pro PACT_BROKER_TOKEN="${PACT_BROKER_TOKEN}"
 
 ## ======================
 ## Misc
 ## ======================
 
-.env:
-	touch .env
-
-output:
-	mkdir -p ./pacts
-	touch ./pacts/tmp
-
-clean: output
-	rm pacts/*
+:
+	touch
