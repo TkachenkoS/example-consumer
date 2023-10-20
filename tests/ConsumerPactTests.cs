@@ -27,7 +27,7 @@ namespace tests
 
             walks = new List<Walk>()
             {
-                new Walk { Id = 27, Name = "Walk-27", Status = "Pending" }
+                new Walk { Id = 27, Name = "Walk-27",Name2 = "Walk-27", Status = "Pending" }
             };
 
             var Config = new PactConfig
@@ -62,6 +62,7 @@ namespace tests
                 result.Should().HaveCount(1);
                 Assert.Equal(27,result[0].Id);
                 Assert.Equal("Walk-27", result[0].Name);
+                Assert.Equal("Walk-27", result[0].Name2);
                 Assert.Equal("Pending",result[0].Status);
             });
         }
