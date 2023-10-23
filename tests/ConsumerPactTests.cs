@@ -62,7 +62,7 @@ namespace tests
                 result.Should().HaveCount(1);
                 Assert.Equal(27,result[0].Id);
                 Assert.Equal("Walk-27", result[0].Name);
-                Assert.Equal("Pending",result[0].Status);
+                Assert.Equal("Pending1",result[0].Status);
             });
         }
     }
